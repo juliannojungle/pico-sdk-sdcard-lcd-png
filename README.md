@@ -1,4 +1,4 @@
-Sample project: how to use SD card with raspberry pico-sdk
+Sample project: how to read png images from sdcard and display on LCD with raspberry pico-sdk
 
 ## Requirements: :heavy_check_mark:
 
