@@ -28,12 +28,45 @@ include_directories(${PICO_CODE_LIB}/Fonts)
 include_directories(${PICO_CODE_LIB}/LCD)
 include_directories(${PICO_CODE_LIB}/GUI)
 
+# zlib dependency to use libpng
+set(SKIP_INSTALL_ALL ON)
+set(LIB_ZLIB ${CMAKE_SOURCE_DIR}/src/Dependency/zlib)
+set(LIB_ZCONF ${CMAKE_BINARY_DIR}/zlib_build)
+include_directories(${LIB_ZLIB})
+include_directories(${LIB_ZCONF})
+add_subdirectory(${LIB_ZLIB} zlib_build)
+target_link_libraries(${PROJECT_NAME} PUBLIC zlibstatic)
+# set zlib info to use on libpng
+set(PNG_BUILD_ZLIB ON)
+set(ZLIB_LIBRARIES zlibstatic)
+set(ZLIB_INCLUDE_DIRS ${LIB_ZLIB} ${LIB_ZCONF})
+
+# set(LIB_ZCONF ${CMAKE_SOURCE_DIR}/build/src/Dependency/zlib)
+# set(ZLIB_INCLUDE_DIRS ${LIB_ZLIB} ${LIB_ZCONF})
+# add_subdirectory(${LIB_ZLIB} ${LIB_ZCONF})
+# add_dependencies(${PROJECT_NAME} zlibstatic)
+
+# libpng dependencies to handle png files
+set(PNG_LIB ${CMAKE_SOURCE_DIR}/src/Dependency/libpng)
+set(PNG_SHARED OFF)
+set(PNG_STATIC ON)
+set(PNG_FRAMEWORK OFF)
+set(PNG_EXECUTABLES OFF)
+set(PNG_TESTS OFF)
+set(PNG_DEBUG OFF)
+include_directories(${PNG_LIB})
+add_subdirectory(${PNG_LIB})
+configure_file(${PNG_LIB}/scripts/pnglibconf.h.prebuilt
+    ${PNG_LIB}/pnglibconf.h)
+
 target_link_libraries(${PROJECT_NAME}
     PUBLIC
     pico_stdlib
     FatFs_SPI
     GUI
-    Config)
+    Config
+    # zlibstatic
+    png_static)
 
 pico_enable_stdio_usb(${PROJECT_NAME} 1) # enable usb output
 pico_enable_stdio_uart(${PROJECT_NAME} 0) # disable uart output

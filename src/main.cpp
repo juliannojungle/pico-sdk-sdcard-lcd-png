@@ -7,6 +7,10 @@
 #include "f_util.h" // FS functions and declarations.
 #include "hw_config.h" // no-OS-FatFS declarations
 
+// Provide png support
+#include "pngHelper.c"
+// End provide png support
+
 static std::vector<spi_t *> spis;
 static std::vector<sd_card_t *> sd_cards;
 
@@ -94,8 +98,8 @@ void test(sd_card_t *pSD) {
 
     printf("opening file...\n");
     FIL file;
-    const char *const filename = "teste.txt";
-    result = f_open(&file, filename, FA_OPEN_APPEND | FA_READ | FA_WRITE);
+    const char *const filename = "maps/01.png";
+    result = f_open(&file, filename, FA_OPEN_EXISTING | FA_READ);
 
     if (FR_OK != result && FR_EXIST != result) {
         printf("f_open(%s) error: %s (%d)\n", filename, FRESULT_str(result), result);
@@ -103,18 +107,6 @@ void test(sd_card_t *pSD) {
         return;
     }
 
-    printf("writing file...\n");
-    f_rewind(&file);
-    f_truncate(&file);
-
-    for (int i = 0; i < 10; i++) {
-        if (f_puts("This line was appended!\n", &file) < 0) {
-            printf("f_printf failed\n");
-        }
-    }
-
-    // TODO: read
-    // f_sync(&file);
     // printf("reading file...\n");
     // f_rewind(&file);
     // char * buffer[4096];
@@ -127,6 +119,10 @@ void test(sd_card_t *pSD) {
     //         printf("%s", buffer);
     //     }
     // }
+
+    // ################# BEGIN PNG ROUTINES #################
+    DisplayPng(file);
+    // ################# END PNG ROUTINES #################
 
     printf("closing file...\n");
     result = f_close(&file);
