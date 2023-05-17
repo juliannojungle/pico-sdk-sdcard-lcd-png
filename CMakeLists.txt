@@ -37,27 +37,21 @@ include_directories(${LIB_ZCONF})
 add_subdirectory(${LIB_ZLIB} zlib_build)
 target_link_libraries(${PROJECT_NAME} PUBLIC zlibstatic)
 # set zlib info to use on libpng
-set(PNG_BUILD_ZLIB ON)
+set(PNG_BUILD_ZLIB ON CACHE BOOL "" FORCE)
 set(ZLIB_LIBRARIES zlibstatic)
 set(ZLIB_INCLUDE_DIRS ${LIB_ZLIB} ${LIB_ZCONF})
 
-# set(LIB_ZCONF ${CMAKE_SOURCE_DIR}/build/src/Dependency/zlib)
-# set(ZLIB_INCLUDE_DIRS ${LIB_ZLIB} ${LIB_ZCONF})
-# add_subdirectory(${LIB_ZLIB} ${LIB_ZCONF})
-# add_dependencies(${PROJECT_NAME} zlibstatic)
-
 # libpng dependencies to handle png files
 set(PNG_LIB ${CMAKE_SOURCE_DIR}/src/Dependency/libpng)
-set(PNG_SHARED OFF)
-set(PNG_STATIC ON)
-set(PNG_FRAMEWORK OFF)
-set(PNG_EXECUTABLES OFF)
-set(PNG_TESTS OFF)
-set(PNG_DEBUG OFF)
+set(PNG_SHARED OFF CACHE BOOL "")
+set(PNG_STATIC ON CACHE BOOL "")
+set(PNG_FRAMEWORK OFF CACHE BOOL "")
+set(PNG_EXECUTABLES OFF CACHE BOOL "")
+set(PNG_TESTS OFF CACHE BOOL "")
+set(PNG_DEBUG OFF CACHE BOOL "")
 include_directories(${PNG_LIB})
 add_subdirectory(${PNG_LIB})
-configure_file(${PNG_LIB}/scripts/pnglibconf.h.prebuilt
-    ${PNG_LIB}/pnglibconf.h)
+configure_file(${PNG_LIB}/scripts/pnglibconf.h.prebuilt ${PNG_LIB}/pnglibconf.h)
 
 target_link_libraries(${PROJECT_NAME}
     PUBLIC
@@ -65,7 +59,6 @@ target_link_libraries(${PROJECT_NAME}
     FatFs_SPI
     GUI
     Config
-    # zlibstatic
     png_static)
 
 pico_enable_stdio_usb(${PROJECT_NAME} 1) # enable usb output
