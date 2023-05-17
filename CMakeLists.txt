@@ -29,20 +29,26 @@ include_directories(${PICO_CODE_LIB}/LCD)
 include_directories(${PICO_CODE_LIB}/GUI)
 
 # zlib dependency to use libpng
-set(SKIP_INSTALL_ALL ON)
 set(LIB_ZLIB ${CMAKE_SOURCE_DIR}/src/Dependency/zlib)
+# set a custom build script for zlibstatic, skipping the rest
+file(REMOVE ${LIB_ZLIB}/CMakeLists.txt)
+file(COPY ${CMAKE_SOURCE_DIR}/src/Dependency/zlibstatic.cmake DESTINATION ${LIB_ZLIB})
+file(RENAME ${LIB_ZLIB}/zlibstatic.cmake ${LIB_ZLIB}/CMakeLists.txt)
+# build zlibstatic
+add_subdirectory(${LIB_ZLIB} zlib_build)
+target_link_libraries(${PROJECT_NAME} PUBLIC zlibstatic)
+# set libpng to use zlibstatic
 set(LIB_ZCONF ${CMAKE_BINARY_DIR}/zlib_build)
 include_directories(${LIB_ZLIB})
 include_directories(${LIB_ZCONF})
-add_subdirectory(${LIB_ZLIB} zlib_build)
-target_link_libraries(${PROJECT_NAME} PUBLIC zlibstatic)
-# set zlib info to use on libpng
 set(PNG_BUILD_ZLIB ON CACHE BOOL "" FORCE)
+set(SKIP_INSTALL_ALL ON)
 set(ZLIB_LIBRARIES zlibstatic)
 set(ZLIB_INCLUDE_DIRS ${LIB_ZLIB} ${LIB_ZCONF})
 
 # libpng dependencies to handle png files
 set(PNG_LIB ${CMAKE_SOURCE_DIR}/src/Dependency/libpng)
+# setup libpng to only build png_static, skipping the rest
 set(PNG_SHARED OFF CACHE BOOL "")
 set(PNG_STATIC ON CACHE BOOL "")
 set(PNG_FRAMEWORK OFF CACHE BOOL "")
