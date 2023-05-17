@@ -139,7 +139,7 @@ int main() {
     stdio_init_all();
     time_init();
 
-    sleep_ms(3000);
+    sleep_ms(10000);
     puts("starting.");
 
     SetupSpi();

@@ -1,12 +1,10 @@
-#include "ff.h" // FS functions and declarations.
-
-
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
 
 extern "C" {
+    #include "ff.h" // FS functions and declarations.
     #include <png.h>
     // #include "pngread.c"
     // #include <zlib.h>
@@ -18,6 +16,7 @@ struct custom_file {
 };
 
 void custom_read_data(png_structrp png_ptr, png_bytep data, size_t length) {
+    printf("Custom read data...\n");
     UINT bytesRead;
     f_read((FIL*)png_ptr, data, length, &bytesRead);
 }
@@ -46,20 +45,26 @@ void DisplayPng(FIL &file) {
 
     // OK, you're doing it the hard way, with the lower-level functions. *
 
+    printf("Reading info...\n");
     // The call to png_read_info() gives us all of the information from the
     // PNG file before the first IDAT (image data chunk). REQUIRED.
     png_read_info(png_ptr, info_ptr);
 
+    printf("Parsing image info...\n");
     // Get IDAT (image data chunk).
     png_uint_32 width, height;
     int bit_depth, color_type, interlace_type, row;
     png_get_IHDR(png_ptr, info_ptr, &width, &height, &bit_depth, &color_type, &interlace_type, NULL, NULL);
+
+    printf("PNG info: width: %d, height: %d\n", width, height);
 
     // Allocate the memory to hold the image using the fields of info_ptr. *
     png_bytep row_pointers[height];
 
     for (row = 0; row < height; row++)
         row_pointers[row] = NULL; // Clear the pointer array *
+
+    printf("Allocating memory to read image data...\n");
 
     for (row = 0; row < height; row++)
         auto teste = png_malloc(png_ptr, png_get_rowbytes(png_ptr, info_ptr));
@@ -69,6 +74,7 @@ void DisplayPng(FIL &file) {
         //     static_cast<png_const_structrp>(png_ptr),
         //     png_get_rowbytes(static_cast<png_const_structrp>(png_ptr), static_cast<png_const_inforp>(info_ptr)));
 
+    printf("Reading image...\n");
     // png_read_update_info(png_ptr, info_ptr);
     png_read_image(png_ptr, row_pointers);
 
@@ -93,6 +99,8 @@ void DisplayPng(FIL &file) {
 
     // // Read rest of file, and get additional chunks in info_ptr.  REQUIRED. *
     // png_read_end(png_ptr, info_ptr);
+
+    printf("Done! Destroying read struct...\n");
 
     // Done
     png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
