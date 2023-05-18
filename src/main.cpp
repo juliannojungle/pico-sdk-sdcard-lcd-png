@@ -101,7 +101,7 @@ void test(sd_card_t *pSD) {
 
     printf("opening file...\n");
     FIL file;
-    const char *const filename = "maps/01.png";
+    const char *const filename = "01.png";
     result = f_open(&file, filename, FA_OPEN_EXISTING | FA_READ);
 
     if (FR_OK != result && FR_EXIST != result) {

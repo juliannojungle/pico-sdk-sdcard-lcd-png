@@ -3,6 +3,11 @@ extern "C" {
     #include <setjmp.h>
     #include <png.h>
     #define PNG_READ_SUPPORTED
+
+    #include "DEV_Config.c"
+    #include "LCD_1in28.c"
+    #include "font20.c"
+    #include "GUI_Paint.h"
 }
 
 typedef struct {
@@ -75,8 +80,7 @@ void DisplayPng(FIL &file) {
     printf("Allocating memory to read image data...\n");
 
     for (row = 0; row < height; row++)
-        auto teste = png_malloc(png_ptr, png_get_rowbytes(png_ptr, info_ptr));
-        // row_pointers[row] = png_malloc(png_ptr, png_get_rowbytes(png_ptr, info_ptr));
+        row_pointers[row] = (png_bytep)png_malloc(png_ptr, png_get_rowbytes(png_ptr, info_ptr));
 
         // row_pointers[row] = png_malloc(
         //     static_cast<png_const_structrp>(png_ptr),
@@ -87,6 +91,66 @@ void DisplayPng(FIL &file) {
     png_read_image(png_ptr, row_pointers);
 
     //** display row_pointers ***
+    printf("Initialize display...\n");
+    if (DEV_Module_Init() != 0) {
+        png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
+        return;
+    }
+
+    /* LCD Init */
+    LCD_1IN28_Init(HORIZONTAL);
+    LCD_1IN28_Clear(WHITE);
+
+    /* Turn backlight on */
+    printf("Turning on backlight...\n");
+    EPD_BL_PIN = 25;
+    DEV_GPIO_Mode(EPD_BL_PIN, GPIO_OUT);
+    DEV_Digital_Write(EPD_CS_PIN, 1);
+    DEV_Digital_Write(EPD_DC_PIN, 0);
+    DEV_Digital_Write(EPD_BL_PIN, 1);
+
+    // UDOUBLE Imagesize = width * height * 2;
+    // UWORD *texture;
+
+    // if ((texture = (UWORD *) malloc(Imagesize)) == NULL) {
+    //     printf("Failed to allocate memory to display the image...\n");
+    //     png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
+    // }
+
+    // printf("Paint_NewImage...\n");
+    // Paint_NewImage((UBYTE *)texture, width, height, ROTATE_0, WHITE);
+    // printf("Paint_SetScale...\n");
+    // Paint_SetScale(65);
+
+    // while (true) {
+    // printf("Paint_Clear...\n");
+    // Paint_Clear(WHITE);
+    // printf("Paint_DrawString_EN...\n");
+    // Paint_DrawString_EN(100, 100, "Hello, World!", &Font20, BLACK, WHITE);
+    printf("LCD_1IN28_Display...\n");
+    // LCD_1IN28_Display(texture);
+
+
+    LCD_1IN28_SetWindows(0, 0, width, height);
+    DEV_Digital_Write(EPD_DC_PIN, 1);
+    DEV_Digital_Write(EPD_CS_PIN, 0);
+
+    for (row = 0; row < height; row++) {
+        // DEV_SPI_Write_nByte((uint8_t *)row_pointers[row], width*2);
+        // DEV_SPI_Write_nByte((uint8_t *)row_pointers[row], sizeof(row_pointers[row]));
+        // DEV_SPI_Write_nByte((uint8_t *)row_pointers[row], png_get_rowbytes(png_ptr, info_ptr));
+        DEV_SPI_Write_nByte((uint8_t *)row_pointers[row], png_get_rowbytes(png_ptr, info_ptr) * 2);
+    }
+
+    DEV_Digital_Write(EPD_CS_PIN, 1);
+    LCD_1IN28_SendCommand(0x29);
+
+
+    //     DEV_Delay_ms(100);
+    // }
+
+    printf("DEV_Module_Exit...\n");
+    DEV_Module_Exit();
 
     // int number_passes = png_set_interlace_handling(png_ptr);
     // int pass;
@@ -110,5 +174,4 @@ void DisplayPng(FIL &file) {
 
     printf("Done! Destroying read struct...\n");
     png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
-
 }
