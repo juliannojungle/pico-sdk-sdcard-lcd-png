@@ -1,5 +1,8 @@
-#include <stdio.h>
-#include <string.h>
+extern "C" {
+    #include <stdio.h>
+    #include <string.h>
+}
+
 #include <vector>
 
 #include "pico/stdlib.h"
@@ -8,7 +11,7 @@
 #include "hw_config.h" // no-OS-FatFS declarations
 
 // Provide png support
-#include "pngHelper.c"
+#include "pngHelper.cpp"
 // End provide png support
 
 static std::vector<spi_t *> spis;
@@ -106,19 +109,6 @@ void test(sd_card_t *pSD) {
         f_unmount(pSD->pcName);
         return;
     }
-
-    // printf("reading file...\n");
-    // f_rewind(&file);
-    // char * buffer[4096];
-    // UINT bytesRead = 4096;
-
-    // while (bytesRead > 0) {
-    //     result = f_read(&file, buffer, sizeof buffer, &bytesRead);
-
-    //     if (result == FR_OK) {
-    //         printf("%s", buffer);
-    //     }
-    // }
 
     // ################# BEGIN PNG ROUTINES #################
     DisplayPng(file);

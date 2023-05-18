@@ -1,29 +1,29 @@
-#include <stddef.h>
-#include <stdlib.h>
-#include <string.h>
-#include <stdio.h>
-
 extern "C" {
     #include "ff.h" // FS functions and declarations.
+    #include <setjmp.h>
     #include <png.h>
-    // #include "pngread.c"
-    // #include <zlib.h>
     #define PNG_READ_SUPPORTED
 }
 
-struct custom_file {
-    FIL file;
-};
+typedef struct {
+    FIL *file;
+} custom_file;
 
 void custom_read_data(png_structrp png_ptr, png_bytep data, size_t length) {
     printf("Custom read data...\n");
     UINT bytesRead;
-    f_read((FIL*)png_ptr, data, length, &bytesRead);
+    custom_file *filep = (custom_file*)png_get_io_ptr(png_ptr);
+    f_read(filep->file, data, length, &bytesRead);
+}
+
+static void error(png_structp png_ptr, const char *message)
+{
+    printf("Error from libpng: %s\n", message);
 }
 
 void DisplayPng(FIL &file) {
     printf("Creating read structure...\n");
-    png_structp png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
+    png_structp png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, error, NULL);
 
     if (png_ptr == NULL) {
         printf("png_create_read_struct error\n");
@@ -40,10 +40,19 @@ void DisplayPng(FIL &file) {
     }
 
     printf("Setting up the custom read function...\n");
-    custom_file filep { file };
-    png_set_read_fn(static_cast<png_structrp>(png_ptr), &filep, custom_read_data);
+    custom_file filep;
+    filep.file = &file;
+    png_set_read_fn(png_ptr, &filep, custom_read_data);
 
-    // OK, you're doing it the hard way, with the lower-level functions. *
+    printf("Setting up LongJump...\n");
+
+    if (setjmp(png_jmpbuf(png_ptr)) == 0) {
+        printf("LongJump set...\n");
+    } else {
+        printf("We got a LongJump, destroying read struct...\n");
+        png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
+        return;
+    }
 
     printf("Reading info...\n");
     // The call to png_read_info() gives us all of the information from the
@@ -51,11 +60,10 @@ void DisplayPng(FIL &file) {
     png_read_info(png_ptr, info_ptr);
 
     printf("Parsing image info...\n");
-    // Get IDAT (image data chunk).
     png_uint_32 width, height;
     int bit_depth, color_type, interlace_type, row;
+    // Get IDAT (image data chunk).
     png_get_IHDR(png_ptr, info_ptr, &width, &height, &bit_depth, &color_type, &interlace_type, NULL, NULL);
-
     printf("PNG info: width: %d, height: %d\n", width, height);
 
     // Allocate the memory to hold the image using the fields of info_ptr. *
@@ -101,8 +109,6 @@ void DisplayPng(FIL &file) {
     // png_read_end(png_ptr, info_ptr);
 
     printf("Done! Destroying read struct...\n");
-
-    // Done
     png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
 
 }
