@@ -59,15 +59,14 @@ void DisplayPng(FIL &file) {
         return;
     }
 
-    printf("Reading info...\n");
     // The call to png_read_info() gives us all of the information from the
     // PNG file before the first IDAT (image data chunk). REQUIRED.
+    printf("Reading info...\n");
     png_read_info(png_ptr, info_ptr);
 
     printf("Parsing image info...\n");
     png_uint_32 width, height;
-    int bit_depth, color_type, interlace_type, row;
-    // Get IDAT (image data chunk).
+    int bit_depth, color_type, interlace_type;
     png_get_IHDR(png_ptr, info_ptr, &width, &height, &bit_depth, &color_type, &interlace_type, NULL, NULL);
     printf("PNG info: width: %d, height: %d\n", width, height);
 
@@ -78,21 +77,6 @@ void DisplayPng(FIL &file) {
     // }
     // png_read_update_info(png_ptr, info_ptr);
 
-    // Allocate the memory to hold the image using the fields of info_ptr. *
-    png_bytep row_pointers[height];
-
-    for (row = 0; row < height; row++)
-        row_pointers[row] = NULL; // Clear the pointer array *
-
-    printf("Allocating memory to read image data...\n");
-
-    for (row = 0; row < height; row++)
-        row_pointers[row] = (png_bytep)png_malloc(png_ptr, png_get_rowbytes(png_ptr, info_ptr));
-
-    printf("Reading image...\n");
-    png_read_image(png_ptr, row_pointers);
-
-    //** display row_pointers ***
     printf("Initialize display...\n");
     if (DEV_Module_Init() != 0) {
         png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
@@ -101,7 +85,34 @@ void DisplayPng(FIL &file) {
 
     /* LCD Init */
     LCD_1IN28_Init(HORIZONTAL);
-    LCD_1IN28_Clear(WHITE);
+    LCD_1IN28_Clear(BLACK);
+
+    png_bytep row_pointers(NULL);
+    int col, row;
+    int maxCol(width > LCD_1IN28.WIDTH ? LCD_1IN28.WIDTH : width);     // won't print outside display.
+    int maxRow(height > LCD_1IN28.HEIGHT ? LCD_1IN28.HEIGHT : height); // won't print outside display.
+
+    // ####### LCD_1IN28_Display #######
+    LCD_1IN28_SetWindows(0, 0, maxCol, maxRow);
+    DEV_Digital_Write(EPD_DC_PIN, 1);
+    DEV_Digital_Write(EPD_CS_PIN, 0);
+
+    for (row = 0; row < maxRow; row++) {
+        row_pointers = (png_bytep)png_malloc(png_ptr, png_get_rowbytes(png_ptr, info_ptr));
+        png_read_rows(png_ptr, &row_pointers, NULL, 1);
+
+        for (col = 0; col < maxCol; col++) {
+            DEV_SPI_WriteByte((uint8_t)row_pointers[col]);
+            DEV_SPI_WriteByte((uint8_t)row_pointers[col]);
+        }
+
+        free(row_pointers);
+        row_pointers = NULL;
+    }
+
+    DEV_Digital_Write(EPD_CS_PIN, 1);
+    LCD_1IN28_SendCommand(0x29);
+    // ####### LCD_1IN28_Display #######
 
     /* Turn backlight on */
     printf("Turning on backlight...\n");
@@ -111,45 +122,8 @@ void DisplayPng(FIL &file) {
     DEV_Digital_Write(EPD_DC_PIN, 0);
     DEV_Digital_Write(EPD_BL_PIN, 1);
 
-    // ####### LCD_1IN28_Display #######
-    LCD_1IN28_SetWindows(0, 0, 240, 240);
-    DEV_Digital_Write(EPD_DC_PIN, 1);
-    DEV_Digital_Write(EPD_CS_PIN, 0);
-
-    int col;
-    for (row = 0; row < 240; row++) {
-        for (col = 0; col < 240; col++) {
-            DEV_SPI_WriteByte((uint8_t)((uint8_t *)row_pointers[row])[col]);
-            DEV_SPI_WriteByte((uint8_t)((uint8_t *)row_pointers[row])[col]);
-        }
-    }
-
-    DEV_Digital_Write(EPD_CS_PIN, 1);
-    LCD_1IN28_SendCommand(0x29);
-    // ####### LCD_1IN28_Display #######
-
     printf("DEV_Module_Exit...\n");
     DEV_Module_Exit();
-
-    // int number_passes = png_set_interlace_handling(png_ptr);
-    // int pass;
-
-    // for (pass = 0; pass < number_passes; pass++) {
-    //     for (row = 0; row < height; row++) {
-    //         row_pointers[row] = NULL; // Clear the pointer array *
-    //         row_pointers[row] = png_malloc(png_ptr, png_get_rowbytes(png_ptr, info_ptr));
-
-    //         // Read the image a single row at a time *
-    //         png_read_rows(png_ptr, &row_pointers[row], NULL, 1);
-
-    //         // display row_pointers;
-    //     }
-
-    //     // display row_pointers;
-    // }
-
-    // // Read rest of file, and get additional chunks in info_ptr.  REQUIRED. *
-    // png_read_end(png_ptr, info_ptr);
 
     printf("Done! Destroying read struct...\n");
     png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
