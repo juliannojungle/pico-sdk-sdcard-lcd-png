@@ -68,14 +68,19 @@ void DisplayPng(FIL &file) {
     png_uint_32 width, height;
     int bit_depth, color_type, interlace_type;
     png_get_IHDR(png_ptr, info_ptr, &width, &height, &bit_depth, &color_type, &interlace_type, NULL, NULL);
-    printf("PNG info: width: %d, height: %d\n", width, height);
+    printf("PNG info: width: %d, height: %d, bit_depth: %d\n", width, height, bit_depth);
 
-    /* Flip the RGB pixels to BGR (or RGBA to BGRA). */
-    // if ((color_type & PNG_COLOR_MASK_COLOR) != 0) {
-    //     printf("Flipping colors...\n");
-    //     png_set_bgr(png_ptr);
-    // }
-    // png_read_update_info(png_ptr, info_ptr);
+    if (color_type == PNG_COLOR_TYPE_GRAY) printf("PNG_COLOR_TYPE_GRAY\n");
+    if (color_type == PNG_COLOR_TYPE_GRAY_ALPHA) printf("PNG_COLOR_TYPE_GRAY_ALPHA\n");
+    if (color_type == PNG_COLOR_TYPE_PALETTE) printf("PNG_COLOR_TYPE_PALETTE\n");
+    if (color_type == PNG_COLOR_TYPE_RGB) printf("PNG_COLOR_TYPE_RGB\n");
+    if (color_type == PNG_COLOR_TYPE_RGB_ALPHA) printf("PNG_COLOR_TYPE_RGB_ALPHA\n");
+
+    /* Expand paletted colors into true RGB triplets. */
+    if (color_type == PNG_COLOR_TYPE_PALETTE) {
+        png_set_palette_to_rgb(png_ptr);
+        png_read_update_info(png_ptr, info_ptr);
+    }
 
     printf("Initialize display...\n");
     if (DEV_Module_Init() != 0) {
@@ -97,13 +102,24 @@ void DisplayPng(FIL &file) {
     DEV_Digital_Write(EPD_DC_PIN, 1);
     DEV_Digital_Write(EPD_CS_PIN, 0);
 
+    png_color_8 *sig_bit;
+    png_get_sBIT(png_ptr, info_ptr, &sig_bit);
+    printf("red: %d, green: %d, blue: %d, gray: %d, alpha: %d\n", sig_bit->red, sig_bit->green, sig_bit->blue, sig_bit->gray, sig_bit->alpha);
+
     for (row = 0; row < maxRow; row++) {
         row_pointers = (png_bytep)png_malloc(png_ptr, png_get_rowbytes(png_ptr, info_ptr));
         png_read_rows(png_ptr, &row_pointers, NULL, 1);
 
-        for (col = 0; col < maxCol; col++) {
-            DEV_SPI_WriteByte((uint8_t)row_pointers[col]);
-            DEV_SPI_WriteByte((uint8_t)row_pointers[col]);
+        if (row == 0) printf("rowbytes: %d\n", png_get_rowbytes(png_ptr, info_ptr));
+
+        for (col = 0; col < maxCol * 3; col += 3) {
+            png_byte red = row_pointers[col];
+            png_byte green = row_pointers[col+1];
+            png_byte blue = row_pointers[col+2];
+
+            /* The LCD uses RGB565 16-bits format: RRRRRGGG GGGBBBBB */
+            DEV_SPI_WriteByte((red & 0b11111000) | ((green & 0b11100000) >> 5));
+            DEV_SPI_WriteByte(((green & 0b00011100) << 3) | ((blue & 0b11111000) >> 3));
         }
 
         free(row_pointers);

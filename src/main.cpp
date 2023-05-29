@@ -81,7 +81,7 @@ void SetupSdCard() {
 }
 /* END no-OS-FatFS implementations */
 
-void test(sd_card_t *pSD) {
+void test(sd_card_t *pSD, const char * filename) {
     printf("mounting sdcard...\n");
     FRESULT result = f_mount(&pSD->fatfs, pSD->pcName, 1);
 
@@ -101,7 +101,6 @@ void test(sd_card_t *pSD) {
 
     printf("opening file...\n");
     FIL file;
-    const char *const filename = "01.png";
     result = f_open(&file, filename, FA_OPEN_EXISTING | FA_READ);
 
     if (FR_OK != result && FR_EXIST != result) {
@@ -136,7 +135,7 @@ int main() {
     SetupSdCard();
 
     for (size_t i = 0; i < sd_get_num(); ++i) {
-        test(sd_get_by_num(i));
+        test(sd_get_by_num(i), "01.png");
     }
 
     while(true) {
