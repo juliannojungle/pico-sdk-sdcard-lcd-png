@@ -15,3 +15,11 @@
 	branch = juliannojungle/RP2040-LCD-1.28
 	shallow = true
 	ignore = all
+[submodule "src/Dependency/libpng"]
+	path = src/Dependency/libpng
+	url = https://github.com/glennrp/libpng.git
+[submodule "src/Dependency/zlib"]
+	path = src/Dependency/zlib
+	url = https://github.com/madler/zlib.git
+	shallow = true
+	ignore = all
