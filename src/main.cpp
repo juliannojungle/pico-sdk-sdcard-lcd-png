@@ -10,6 +10,9 @@ int main() {
     stdio_init_all();
     time_init();
 
+    // Uncomment the line below to be able to see the log messages on serial monitor.
+    // sleep_ms(3000);
+
     // Initialize no-OS-FS
     SetupSpi();
     SetupSdCard();
