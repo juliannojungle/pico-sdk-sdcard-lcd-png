@@ -20,7 +20,15 @@ Sample project: how to read png images from sdcard and display on LCD with raspb
 
 ## Wiring: :electric_plug:
 
-Soon...
+| RP2040       | R1(10K) | R2(10K) | C1(10uF) | SDCARD           |
+|--------------|---------|---------|----------|------------------|
+| GP19 (MOSI)  |         |         |          | pin2 (CMD/MOSI)  |
+| GP18 (SCLK)  |         |         |          | pin5 (CLK/SCK)   |
+| GP17 (CS)    |   CS    |         |          | pin1 (DAT3/CS)   |
+| GP16 (MISO)  |         |  MISO   |          | pin7 (DAT0/MISO) |
+| 3V3          |   3V3   |  3V3    |   3V3    | pin4 (VDD/3V3)   |
+| GND          |         |         |   GND    | pin6 (VSS2/GND)  |
+| GND          |         |         |          | pin3 (VSS1/GND)  |
 
 ## Development :space_invader:
 
